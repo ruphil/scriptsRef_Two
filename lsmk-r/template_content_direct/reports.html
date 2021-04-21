@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    <title>LSMK Reports</title>
+  </head>
+  <body>
+    <nav>
+        <div class="nav-wrapper">
+            <a class="brand-logo right">LSMK - At a Glance</a>
+            <ul id="nav-mobile" class="left">
+                <li><a class="waves-effect waves-light"><i class="large material-icons">work</i></a></li>
+            </ul>
+        </div>
+    </nav><br/>
+    
+    <div style="text-align: center;">
+        <b style="font-size: x-large;">Generate Reports</b><br/>
+        <span>Click directly on <b>Datewise Report Button</b> to generate <b>This Week's Report</b></span>
+        <hr/>
+        
+        <form class="col s12" id="stats-form" style="display: inline-block;text-align: center; min-width: 80vw;">
+            <div class="row">
+                <div class="input-field col s4">
+                    <input type="date" id="fromdate">
+                    <label class="unselectable">From Date</label>
+                </div>
+
+                <div class="input-field col s4">
+                    <input type="date" id="todate">
+                    <label class="unselectable">To Date</label>
+                </div>
+
+                <div class="input-field col s3">
+                    <button class="btn orange" type="button" onclick="generateDAteWiseReport()">Datewise Report</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script src="js/materialize.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = io();
+
+        $('document').ready(function(){
+            $('select').formSelect();
+        });
+
+        function generateDAteWiseReport(){
+            let fromdate = $('#fromdate').val();
+            let todate = $('#todate').val();
+            if(fromdate == '' || todate == ''){
+                let curr = new Date();
+                let first = curr.getDate() - curr.getDay() + 1;
+                let last = first + 6;
+
+                let firstday = new Date(curr.setDate(first));
+                let lastday = new Date(curr.setDate(last));
+                console.log(firstday, lastday);
+
+                let currentDateFirst = firstday.toISOString().slice(0,10);
+                let currentDateLast = lastday.toISOString().slice(0,10);
+
+                $('#fromdate').val(currentDateFirst);
+                $('#todate').val(currentDateLast);
+                
+            }
+
+            M.toast({html: 'Arrangine Records... Please Wait...'});
+            M.toast({html: 'Print PDF in Landscape...'});
+
+            socket.emit('generateReportDateWise', [$('#fromdate').val(), $('#todate').val()]);
+        }
+
+        socket.on('handleReportGeneration', function(html){
+            nWin(html);
+        });
+
+        function nWin(html) {
+            let w = window.open();
+
+            $(w.document.body).html(html);
+            
+            w.focus();
+            w.print();
+        }
+    </script>
+  </body>
+</html>

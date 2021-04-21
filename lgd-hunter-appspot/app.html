@@ -1,0 +1,505 @@
+<html>
+    <head>
+        <title>Karnataka LGD Hunter</title>
+
+        <style>
+            input[type=number]::-webkit-inner-spin-button, 
+            input[type=number]::-webkit-outer-spin-button { 
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                margin: 0; 
+            }
+
+            table{
+                width: 85%;
+            }
+
+            td {
+                text-align: center; 
+                vertical-align: middle;
+            }
+        </style>
+    </head>
+    <body>
+        <div style="text-align: center;">
+            <h1>Karnataka LGD Codes Hunter - Search By</h1>
+
+            <p id="dbstatus2" style="display: none;">
+                <b><i>Database Fully Loaded...</i></b>
+                &emsp;
+                <button onclick="clearDBReload();">Clear Database and Reload</button>
+            </p>
+
+            <input type="number" id="lgdcode" onkeyup="searchlgdrealtime(event);" onchange="searchlgdcodes();" placeholder="LGD Code"/>
+
+            &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+
+            <input type="text" id="village" onkeyup="searchlgdrealtime(event);" onchange="searchlgdcodes();" placeholder="Village"/>
+
+            <br/><br/>
+
+            <table align="center">
+                <tr>
+                    <td><input type="text" id="district" onkeyup="searchlgdrealtime(event);" onchange="showSuggestionsAndSearchLGDCodes();" placeholder="District"/></td>
+                    <td><input type="text" id="taluk" onkeyup="searchlgdrealtime(event);" onchange="showSuggestionsAndSearchLGDCodes();" placeholder="Taluk"/></td>
+                    <td><input type="text" id="gp" onkeyup="searchlgdrealtime(event);" onchange="showSuggestionsAndSearchLGDCodes();" placeholder="Gram Panchayat"/></td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="districtsuggestions">Districts Suggestions:</label>
+                        <select name="districtsuggestions" id="districtsuggestions" onchange="changeDistrict();">
+                            <option disabled selected>Select District</option>
+                        </select>
+                    </td>
+                    <td>
+                        <label for="taluksuggestions">Taluks Suggestions:</label>
+                        <select name="taluksuggestions" id="taluksuggestions" onchange="changeTaluk();">
+                            <option disabled selected>Select Taluk</option>
+                        </select>
+                    </td>
+                    <td>
+                        <label for="gpsuggestions">GP Suggestions:</label>
+                        <select name="gpsuggestions" id="gpsuggestions" onchange="changeGP();">
+                            <option disabled selected>Select Gram Panchayat</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+        
+            <br/><br/><br/>
+
+            <h1 id="dbstatus1">Loading Database... Please Wait...</h1>
+
+        </div>
+
+        <div id="lgdtable"></div>
+
+        <script>
+            function clearDBReload(){
+                localStorage.removeItem("lgdText");
+                console.log("Local Storage Cleared");
+
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+
+            function changeDistrict(){
+                let districtSelect = document.getElementById('districtsuggestions');
+
+                document.getElementById('district').value = districtSelect.options[districtSelect.selectedIndex].text;
+                searchlgdcodes();
+            }
+
+            function changeTaluk(){
+                let talukSelect = document.getElementById('taluksuggestions');
+
+                document.getElementById('taluk').value = talukSelect.options[talukSelect.selectedIndex].text;
+                searchlgdcodes();
+            }
+
+            function changeGP(){
+                let gpSelect = document.getElementById('gpsuggestions');
+
+                document.getElementById('gp').value = gpSelect.options[gpSelect.selectedIndex].text;
+                searchlgdcodes();
+            }
+
+            function showSuggestionsAndSearchLGDCodes(){
+                showDistrictSuggestions();
+                showTalukSuggestions();
+                showGPSuggestions();
+                searchlgdcodes();
+            }
+
+            function showDistrictSuggestions(){
+                let districtSelect = document.getElementById('districtsuggestions');
+
+                removeOptions(districtSelect);
+
+                let districtPartial = document.getElementById('district').value;
+
+                for( let i = 0, len = districtArry.length; i < len; i++ ) {
+                    let district = districtArry[i];
+
+                    if(districtPartial != "" && district.toLowerCase().includes(districtPartial.toLowerCase())){
+                        let opt = document.createElement('option');
+                        opt.innerHTML = district;
+                        districtSelect.appendChild(opt);
+                    }
+                }
+            }
+
+            function showTalukSuggestions(){
+                let talukSelect = document.getElementById('taluksuggestions');
+
+                removeOptions(talukSelect);
+
+                let talukPartial = document.getElementById('taluk').value;
+
+                for( let i = 0, len = talukArry.length; i < len; i++ ) {
+                    let taluk = talukArry[i];
+
+                    if(talukPartial != "" && taluk.toLowerCase().includes(talukPartial.toLowerCase())){
+                        let opt = document.createElement('option');
+                        opt.innerHTML = taluk;
+                        talukSelect.appendChild(opt);
+                    }
+                }
+            }
+
+            function showGPSuggestions(){
+                let gpSelect = document.getElementById('gpsuggestions');
+
+                removeOptions(gpSelect);
+
+                let gpPartial = document.getElementById('gp').value;
+
+                for( let i = 0, len = gpArry.length; i < len; i++ ) {
+                    let gp = gpArry[i];
+
+                    if(gpPartial != "" && gp.toLowerCase().includes(gpPartial.toLowerCase())){
+                        let opt = document.createElement('option');
+                        opt.innerHTML = gp;
+                        gpSelect.appendChild(opt);
+                    }
+                }
+            }
+
+            function removeOptions(selectElement) {
+                let i, L = selectElement.options.length - 1;
+                for(i = L; i > 0; i--) {
+                    selectElement.remove(i);
+                }
+            }
+
+            function searchlgdrealtime(e){
+                if ((e.keyCode >= 65 && e.keyCode <= 122) || (e.keyCode >= 46 && e.keyCode <= 57) || (e.keyCode >= 37 && e.keyCode <= 40) || (e.keyCode == 8)){
+                    searchlgdcodes();
+                }
+            }
+
+            function searchlgdcodes(){
+                let lgdtableDiv = document.getElementById('lgdtable');
+                lgdtableDiv.innerHTML = "";
+
+                let results = accumulateLGDCodes();
+                // console.log(results);
+
+                if(results.length <= 3000){
+                    tableCreate(results);
+                }
+            }
+
+            function accumulateLGDCodes(){
+                let lgdcodePartial = document.getElementById('lgdcode').value;
+                let districtPartial = document.getElementById('district').value;
+                let talukPartial = document.getElementById('taluk').value;
+                let gpPartial = document.getElementById('gp').value;
+                let villagPartial = document.getElementById('village').value;
+                // console.log(lgdcodePartial);
+
+                let results = [];
+                for( var i = 0, len = lgdArray.length; i < len; i++ ) {
+                    let lgdCodeFromArry = lgdArray[i][0];
+
+                    // console.log(lgdArray[i]);
+                    let cond1 = true;
+                    let cond2 = true;
+                    let cond3 = true;
+                    let cond4 = true;
+                    let cond5 = true;
+                    let cond6 = true;
+                    let cond7 = true;
+                    let cond8 = true;
+                    let cond9 = true;
+                    let cond10 = true;
+
+                    let districtFromArry1 = lgdArray[i][1];
+                    let districtFromArry2 = lgdArray[i][6];
+                    let districtFromArry3 = lgdArray[i][10];
+
+                    let talukFromArry1 = lgdArray[i][2];
+                    let talukFromArry2 = lgdArray[i][7];
+
+                    let gpFromArry1 = lgdArray[i][11];
+
+                    let villageFromArry1 = lgdArray[i][4];
+                    let villageFromArry2 = lgdArray[i][8];
+                    let villageFromArry3 = lgdArray[i][12];
+
+                    // console.log(districtFromArry1, districtFromArry2, districtFromArry3);
+
+                    if(lgdcodePartial != ""){
+                        cond1 = lgdCodeFromArry.includes(lgdcodePartial);
+                    }
+
+                    if(districtPartial != ""){
+                        cond2 = districtFromArry1.toLowerCase().includes(districtPartial.toLowerCase());
+                        cond3 = districtFromArry2.toLowerCase().includes(districtPartial.toLowerCase());
+                        cond4 = districtFromArry3.toLowerCase().includes(districtPartial.toLowerCase());
+                    }
+
+                    if(talukPartial != ""){
+                        cond5 = talukFromArry1.toLowerCase().includes(talukPartial.toLowerCase());
+                        cond6 = talukFromArry2.toLowerCase().includes(talukPartial.toLowerCase());
+                    }
+
+                    if(gpPartial != ""){
+                        cond7 = gpFromArry1.toLowerCase().includes(gpPartial.toLowerCase());
+                    }
+
+                    if(villagPartial != ""){
+                        cond8 = villageFromArry1.toLowerCase().includes(villagPartial.toLowerCase());
+                        cond9 = villageFromArry2.toLowerCase().includes(villagPartial.toLowerCase());
+                        cond10 = villageFromArry3.toLowerCase().includes(villagPartial.toLowerCase());
+                    }
+
+                    let condA = cond1;
+                    let condB = cond2 || cond3 || cond4;
+                    let condC = cond5 || cond6;
+                    let condD = cond7;
+                    let condE = cond8 || cond9 || cond10;
+
+                    let conds = condA && condB && condC && condD && condE;
+
+                    if( conds ) {
+                        results.push(lgdArray[i]);
+                    }
+                }
+
+                return results;
+            }
+
+            function tableCreate(results) {
+                let lgdtableDiv = document.getElementById('lgdtable');
+                let tableStr = "<table border='1' align='center'>";
+                tableStr += "<thead>";
+                tableStr += "<tr>";
+                tableStr += "<th>LGD Code</th><th>As per SSLR</th><th>As per GOI Directory</th><th>As per NIC</th>";
+                tableStr += "</tr>";
+                tableStr += "</thead>";
+
+                // let header = lgdArray[0];
+                // let header = ["LGD_Code", "As per SSLR", "As per GOI Directory", "As per NIC"];
+                
+                tableStr += "<tbody>";
+                for (let i = 0; i < results.length; i++){
+                    let rowTextArry = results[i];
+
+                    tableStr += "<tr>";
+
+                    tableStr += "<td>";
+                    tableStr += rowTextArry[0];
+                    tableStr += "</td>";
+
+                    tableStr += "<td>";
+                    tableStr += "District: " + rowTextArry[1];
+                    tableStr += "<br/>";
+                    tableStr += "Village: " + rowTextArry[4];
+                    tableStr += "<br/>";
+                    tableStr += "Taluk: " + rowTextArry[2];
+                    tableStr += "<br/>";
+                    tableStr += "Hobli: " + rowTextArry[3];
+                    tableStr += "<br/>";
+                    
+
+                    let ULB = 'No';
+                    if(rowTextArry[5] == 'ULB'){
+                        ULB = 'Yes';
+                    }
+
+                    tableStr += "Urban Local Body: " + ULB;
+                    tableStr += "<br/>";
+                    tableStr += "</td>";
+
+                    tableStr += "<td>";
+                    tableStr += "District: " + rowTextArry[6];
+                    tableStr += "<br/>";
+                    tableStr += "Village: " + rowTextArry[8];
+                    tableStr += "<br/>";
+                    tableStr += "Taluk: " + rowTextArry[7];
+                    tableStr += "<br/>";
+                    tableStr += "Status: " + rowTextArry[9];
+                    tableStr += "<br/>";
+                    tableStr += "</td>";
+
+                    tableStr += "<td>";
+                    tableStr += "District: " + rowTextArry[10];
+                    tableStr += "<br/>";
+                    tableStr += "Village: " + rowTextArry[12];
+                    tableStr += "<br/>";
+                    tableStr += "Gram Panchayat: " + rowTextArry[11];
+                    tableStr += "<br/>";
+                    tableStr += "</td>";
+
+                    tableStr += "<tr>";
+                }
+                tableStr += "</tbody>";
+
+                lgdtableDiv.innerHTML = tableStr;
+            }
+
+            window.onload = function() {
+
+                setTimeout(() => {
+                    getLGDIfNotAvailable();
+                }, 1000);
+            }
+
+            let lgdArray = [];
+            function getLGDIfNotAvailable(){
+                lgdText = localStorage.getItem("lgdText");
+                // console.log(lgdText);
+
+                if(lgdText == null){
+                    fetch('https://raw.githubusercontent.com/ruphil/SurveyOfIndia-Dedicated/main/Karnataka_Villages_LGDCodes_Compiled.csv')
+                    .then(response => response.text())
+                    .then(lgdText => {
+
+                        localStorage.setItem("lgdText", lgdText);
+
+                        // console.log(lgdText);
+
+                        startSettingArray();
+
+                        console.log('Downloaded CSV');
+                    });
+                } else {
+                    startSettingArray();
+                    // console.log('came here 2');
+                }
+            }
+
+            let districtArry = [];
+            let talukArry = [];
+            let gpArry = [];
+            function startSettingArray(){
+                let lgdText = localStorage.getItem("lgdText");
+                lgdArray = CSVToArray(lgdText, ",");
+                lgdArray.pop();
+                lgdArray.shift();
+                // console.log(lgdArray);
+
+                let dist1 = getCol(lgdArray, 1);
+                let dist2 = getCol(lgdArray, 6);
+                let dist3 = getCol(lgdArray, 10);
+                districtArry = dist1.concat(dist2).concat(dist3).filter(onlyUnique);
+
+                districtArry.map(s => s.trim());
+
+                let taluk1 = getCol(lgdArray, 2);
+                let taluk2 = getCol(lgdArray, 7);
+                talukArry = taluk1.concat(taluk2).filter(onlyUnique);
+
+                talukArry.map(s => s.trim());
+
+                gpArry = getCol(lgdArray, 11).filter(onlyUnique);
+                gpArry.map(s => s.trim());
+                // console.log(districtArry);
+
+                document.getElementById('dbstatus1').style.display = 'none';
+                document.getElementById('dbstatus2').style.display = 'block';
+            }
+
+            function getCol(matrix, col){
+                let column = [];
+                for(var i=0; i<matrix.length; i++){
+                    column.push(matrix[i][col]);
+                }
+
+                return column;
+            }
+
+            function onlyUnique(value, index, self) {
+                return self.indexOf(value) === index;
+            }
+
+            function CSVToArray( strData, strDelimiter ){
+                // Check to see if the delimiter is defined. If not,
+                // then default to comma.
+                strDelimiter = (strDelimiter || ",");
+
+                // Create a regular expression to parse the CSV values.
+                var objPattern = new RegExp(
+                    (
+                        // Delimiters.
+                        "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+                        // Quoted fields.
+                        "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+                        // Standard fields.
+                        "([^\"\\" + strDelimiter + "\\r\\n]*))"
+                    ),
+                    "gi"
+                    );
+
+
+                // Create an array to hold our data. Give the array
+                // a default empty first row.
+                var arrData = [[]];
+
+                // Create an array to hold our individual pattern
+                // matching groups.
+                var arrMatches = null;
+
+
+                // Keep looping over the regular expression matches
+                // until we can no longer find a match.
+                while (arrMatches = objPattern.exec( strData )){
+
+                    // Get the delimiter that was found.
+                    var strMatchedDelimiter = arrMatches[ 1 ];
+
+                    // Check to see if the given delimiter has a length
+                    // (is not the start of string) and if it matches
+                    // field delimiter. If id does not, then we know
+                    // that this delimiter is a row delimiter.
+                    if (
+                        strMatchedDelimiter.length &&
+                        strMatchedDelimiter !== strDelimiter
+                        ){
+
+                        // Since we have reached a new row of data,
+                        // add an empty row to our data array.
+                        arrData.push( [] );
+
+                    }
+
+                    var strMatchedValue;
+
+                    // Now that we have our delimiter out of the way,
+                    // let's check to see which kind of value we
+                    // captured (quoted or unquoted).
+                    if (arrMatches[ 2 ]){
+
+                        // We found a quoted value. When we capture
+                        // this value, unescape any double quotes.
+                        strMatchedValue = arrMatches[ 2 ].replace(
+                            new RegExp( "\"\"", "g" ),
+                            "\""
+                            );
+
+                    } else {
+
+                        // We found a non-quoted value.
+                        strMatchedValue = arrMatches[ 3 ];
+
+                    }
+
+
+                    // Now that we have our value string, let's add
+                    // it to the data array.
+                    arrData[ arrData.length - 1 ].push( strMatchedValue );
+                }
+
+                // Return the parsed data.
+                return( arrData );
+            }
+            
+        </script>
+
+    </body>
+</html>

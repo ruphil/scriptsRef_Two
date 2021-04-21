@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>GeoJSON Checker</title>
+
+    <link rel="stylesheet" href="css/materialize.min.css">
+    <link rel="stylesheet" href="css/leaflet.css">
+    <link rel="stylesheet" href="css/L.Control.ZoomBox.css">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png"/>
+
+    <style>
+      html, body {
+          height: 100%;
+          margin: 0;
+      }
+
+      #mapid {
+          margin: 0;
+          min-height: 100%;
+          cursor: crosshair;
+      }
+
+      .settings {
+        padding: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="latlngDiv" style="position: absolute; top: 0; right: 0; z-index: 10000; color: white;"></div>
+    
+    <div id="mapid"></div>
+
+    <div class="settings" style="position: absolute; bottom: 0; left: 0; z-index: 10000; color: white;">
+      <div id="options" class="scale-transition scale-out">
+        <label>
+          <input type="checkbox" id="basemap" checked/>
+          <span>BaseMap</span>
+        </label><br/>
+
+        <label>
+          <input type="checkbox" id="stateBoundary"/>
+          <span>State Boundary</span>
+        </label><br/>
+
+        <label>
+          <input type="checkbox" id="districtBoundary"/>
+          <span>District Boundary</span>
+        </label><br/>
+
+        <label>
+          <input type="checkbox" id="taluksBoundary"/>
+          <span>Taluk Boundary</span>
+        </label><br/>
+
+        <label>
+          <input type="checkbox" id="villageBoundary" checked/>
+          <span>Villages Semi-Auto</span>
+        </label>
+      </div>
+
+      <span class="row">
+        <span class="input-field col s5">
+          <input id="rowNos" type="text" class="white-text" size="30" value="2">
+          <label class="white-text" for="rowNos">Row Nos</label>
+          <a class="waves-effect waves-light btn orange" onclick="loadGeoJSONs();"><i class="material-icons">cloud_download</i></a>
+          <a class="waves-effect waves-light btn yellow" onclick="focusMap();"><i class="material-icons">map</i></a>
+        </span>
+      </span>
+
+      <a id="scale-options" class="btn-floating red waves-effect btn waves-light">
+        <i class="large material-icons">settings</i>
+      </a>
+    </div>
+
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script src="js/materialize.min.js"></script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/leaflet.js"></script>
+    <script src="js/L.Control.ZoomBox.min.js"></script>
+
+    <script>
+      $('#scale-options').click(function(){
+        $("#options").toggleClass("scale-out");
+      });
+    </script>
+    
+    <script>
+        let mymap = L.map('mapid').setView([14.8810453,76.273253], 7);
+
+        let options = {
+          modal: true,
+          title: "Box Area Zoom"
+        };
+
+        let control = L.control.zoomBox(options);
+        mymap.addControl(control);
+
+        $('document').ready(function(){
+          loadDefaultLayer();
+        });
+
+        function focusMap(){
+          setTimeout(() => {
+            $('#mapid').focus();  
+          }, 100);
+        }
+
+        let basemap = null;
+        function loadDefaultLayer(){
+          if($("#basemap").is(':checked')){
+            basemap = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains:['mt0','mt1','mt2','mt3']
+            });
+            
+            basemap.addTo(mymap);
+          } else {
+            removeLayer(basemap);
+          }
+        }
+
+        $('#basemap').change(function(){
+          loadDefaultLayer();
+        });
+
+        function removeLayer(lyr){
+          mymap.removeLayer(lyr);
+        }
+
+        function latlngDisp(e) {
+          $('#latlngDiv').text(e.latlng.toString());
+        }
+
+        mymap.on('mousemove', latlngDisp);
+
+    </script>
+
+    <script>
+      let geoJSONStateLyr = null;
+      $('#stateBoundary').change(function(){
+          if($("#stateBoundary").is(':checked')){
+            loadStateLayer();
+          } else {
+            if(geoJSONStateLyr != null){
+              removeLayer(geoJSONStateLyr);
+            }
+          }
+      });
+
+      function loadStateLayer(){
+        if(geoJSONStateLyr != null){
+          removeLayer(geoJSONStateLyr);
+        }
+
+        geoJSONStateLyr = L.geoJSON(false, {
+          style: function (feature) {
+            return {
+              color: "blue",
+              weight: 4,
+              fill: true,
+              opacity: 1,
+              clickable: false
+            };
+          }
+        }).addTo(mymap);
+
+        fetch('geojson/karn.json')
+        .then(res => res.text())
+        .then(jsontext => {
+          // console.log(jsontext);
+          geoJSONStateLyr.addData(JSON.parse(jsontext));
+            // mymap.fitBounds(geoJSONStateLyr.getBounds());
+        });
+      }
+
+      let geoJSONDistrictLyr = null;
+      $('#districtBoundary').change(function(){
+          if($("#districtBoundary").is(':checked')){
+            loadDistrictLayer();
+          } else {
+            if(geoJSONDistrictLyr != null){
+              removeLayer(geoJSONDistrictLyr);
+            }
+          }
+      });
+
+      function loadDistrictLayer(){
+        if(geoJSONDistrictLyr != null){
+          removeLayer(geoJSONDistrictLyr);
+        }
+
+        geoJSONDistrictLyr = L.geoJSON(false, {
+          style: function (feature) {
+            return {
+              color: "red",
+              weight: 2,
+              fill: true,
+              opacity: 1,
+              clickable: false
+            };
+          },
+          onEachFeature: function (feature, layer) {
+            // console.log(feature.properties);
+            layer.bindTooltip('<p><b>' + feature.properties.KGISDist_1 +'</b></p>', {
+              // permanent: true,
+              permanent: false
+            });
+          }
+        }).addTo(mymap);
+
+        fetch('geojson/districts.json')
+        .then(res => res.text())
+        .then(jsontext => {
+          geoJSONDistrictLyr.addData(JSON.parse(jsontext));
+            // mymap.fitBounds(geoJSONStateLyr.getBounds());
+        });
+      }
+
+      let geoJSONTalukLyr = null;
+      $('#taluksBoundary').change(function(){
+          if($("#taluksBoundary").is(':checked')){
+            loadTalukLayer();
+          } else {
+            if(geoJSONTalukLyr != null){
+              removeLayer(geoJSONTalukLyr);
+            }
+          }
+      });
+
+      function loadTalukLayer(){
+        if(geoJSONTalukLyr != null){
+          removeLayer(geoJSONTalukLyr);
+        }
+
+        geoJSONTalukLyr = L.geoJSON(false, {
+          style: function (feature) {
+            return {
+              color: "orange",
+              weight: 1,
+              fill: true,
+              opacity: 1,
+              clickable: false
+            };
+          },
+          onEachFeature: function (feature, layer) {
+            // console.log(feature.properties);
+            layer.bindPopup('<p><b>' + feature.properties.KGISTalukN +'</b></p>');
+            layer.bindTooltip('<p><b>' + feature.properties.KGISTalukN +'</b></p>', {
+              permanent: false
+            });
+          }
+        }).addTo(mymap);
+
+        fetch('geojson/taluks.json')
+        .then(res => res.text())
+        .then(jsontext => {
+          geoJSONTalukLyr.addData(JSON.parse(jsontext));
+            // mymap.fitBounds(geoJSONStateLyr.getBounds());
+        });
+      }
+    </script>
+
+    <script>
+      let geoJSONVillagesLyr = null;
+      function loadVillagesLayer(districtName){
+        if(geoJSONVillagesLyr != null){
+          removeLayer(geoJSONVillagesLyr);
+        }
+
+        if($("#villageBoundary").is(':checked')){
+          geoJSONVillagesLyr = L.geoJSON(false, {
+            onEachFeature: function (feature, layer) {
+              // console.log(feature);
+              layer.bindPopup('<p><b>' + feature.properties.KGISVill_2 +'</b></p>');
+            }
+          }).addTo(mymap);
+
+          fetch(`geojson/villages/${districtName}.json`)
+          .then(res => res.text())
+          .then(jsontext => {
+            // console.log(jsontext);
+            geoJSONVillagesLyr.addData(JSON.parse(jsontext));
+            // mymap.fitBounds(geoJSONStateLyr.getBounds());
+
+            geoJSONFlightsLyr.addTo(mymap);
+          });
+        }
+      }
+    </script>
+
+    <script>
+      let socket = io();
+
+      let geoJSONFlightsLyr = null;
+      let geoJSONFlightsArray = [];
+      let lyrIndex = 0;
+      let rowIndex = 0;
+      function loadGeoJSONs(){
+        console.log($('#rowNos').val());
+
+        socket.emit('getRowsSheetDataWithGeoJSON', $('#rowNos').val());
+
+        if(geoJSONFlightsLyr != null){
+          removeLayer(geoJSONFlightsLyr);
+        }
+
+        geoJSONFlightsLyr = L.geoJSON(false, {
+          onEachFeature: function (feature, layer) {
+            let featureJSON = geoJSONFlightsArray[lyrIndex];
+
+            if(featureJSON != undefined){
+              layer.bindPopup('<p><b>' + featureJSON.fileName + '</b><br/><b>RowIndex: </b>' + rowIndex +'</p>');
+            } else {
+              layer.bindPopup('<p><b>' + 'fileName' + '</b><br/><b>RowIndex: </b>' + rowIndex +'</p>');
+            }
+            
+            // console.log(featureJSON);
+            lyrIndex++;
+          }
+        });
+      }
+
+      socket.on('handleRowsSheetDataWithGeoJSON', function(ranges){
+        console.log(ranges);
+
+        // console.log(rows);
+        let district = "";
+        for(let i = 0; i < ranges.length; i++){
+          rowIndex = ranges[i].range.split(":")[0].replace("flight_logs!A", "");
+
+          let row = ranges[i].values[0];
+          // console.log(row);
+
+          district = row[15];
+
+          let geoJSONStr = row[54];
+
+          lyrIndex = 0;
+
+          let geoJSONObj = JSON.parse(geoJSONStr);
+          geoJSONFlightsArray = geoJSONObj.geoJSONArry;
+          // console.log(geoJSONFlightsArray);
+
+          geoJSONFlightsLyr.addData(geoJSONFlightsArray);
+          mymap.fitBounds(geoJSONFlightsLyr.getBounds());
+        }
+
+        loadVillagesLayer(district);
+      });
+    </script>
+
+  </body>
+</html>

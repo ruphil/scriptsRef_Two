@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KML & Shapefile Collector</title>
+    <link href="app.css" rel="stylesheet"/>
+</head>
+<body>
+    <br/>
+    <table width="100%">
+        <tr><td class="noselect">
+            <h3>KML & Shapefile Collector</h3>
+
+            <label for="systemidentifier">System Identifier</label><br/><br/>
+            <input type="text" id="systemidentifier" name="systemidentifier" value="Workstation-C"/><br/><br/>
+
+            <button id="btnuniquesourcefolder">Select Source Folders</button><br/><br/>
+            <div id="divuniquesourcefolder"></div><br/>
+
+            <button id="btntargetparentfolder">Select Target Folder</button><br/><br/>
+            <div id="divtargetparentfolder">D:/</div><br/>
+            
+            <button id="makeZipbtn">Start Making Zip</button><br/><br/>
+            <div id="divstatus"></div><br/>
+
+            <button id="btnexit">Exit</button>
+        </td></tr>
+    </table>
+    
+    <script src="app.js"></script>
+</body>
+</html>

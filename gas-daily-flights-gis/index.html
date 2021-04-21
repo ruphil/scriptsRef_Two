@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    
+    <link rel="stylesheet" href="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/css/materialize.min.css">
+    <link rel="stylesheet" href="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/css/leaflet.css">
+    <link rel="stylesheet" href="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/css/L.Control.ZoomBox.css">
+    <style>
+      html, body {
+          height: 100%;
+          margin: 0;
+          /* overflow: hidden; */
+      }
+
+      #mapid {
+          margin: 0;
+          min-height: 100%;
+          height: 95vh;
+          min-width: 100%;
+          cursor: crosshair;
+      }
+
+      .flightstable table, .flightstable td, .flightstable th {
+        border: 1px solid black;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <span id="latlngDiv" style="position: fixed; bottom: 40px; left: 20px; z-index: 10000; color: white;"></span>
+    <table>
+      <tr>
+        <td style="width: 60%; text-align: center; vertical-align: top;">
+          <div id="mapid"></div>
+        </td>
+        <td style="border: 2px solid grey; text-align: center; vertical-align: top;">
+          <div>
+            <div class="row">
+              <div class="col s12">
+                <div class="chip" id="status">
+                  Loading... Please Wait...
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col s6">
+                <select id="drones">
+                  <option value="" disabled selected>Select Drone</option>
+                </select>
+              </div>
+              <div class="col s6">
+                <a class="waves-effect waves-light btn" onclick="fetchFlightIDsNOthers();">Fetch Details</a>
+              </div>
+            </div>
+            <div id="flightstablediv" style="overflow-y: auto; height: 75vh">
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/jquery-3.5.1.min.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/materialize.min.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/leaflet.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/L.Control.ZoomBox.min.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/leaflet-geopackage.min.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/leaflet-kmz.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/togeojson.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/L.KML.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/shp.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/jszip.min.js"></script>
+    <script src="https://daw-kgdc.github.io/file-host-permanent/daw-kgdc-flights-gis/js/turf.min.js"></script>
+
+    <script>
+      let mymap = null;
+      let fObj = {};  // Global Fligths Data Object
+
+      /*  fObj Structure
+      fOJb = {
+        'flightid1': {
+          'flight': {
+            'gjlayer': leafletlyr,
+            'gjvalid': false,
+            'gj': geojson
+          },
+          'planned': {
+            'gjlayer': leafletlyr,
+            'gjvalid': false,
+            'gj': geojson
+          },
+          'abadi': {
+            'gjlayer': leafletlyr,
+            'gjvalid': false,
+            'gj': geojson
+          }
+        },
+        'flightid2': ...
+      }
+      */
+
+      $( document ).ready(function() {
+        getDronesDataFromField();
+        getReadyMapLayer();
+      });
+
+      function getDronesDataFromField(){
+        google.script.run.withSuccessHandler(handleDronesData).getDronesDataFromField();
+      }
+
+      function handleDronesData(dronesData){
+        document.getElementById('status').innerText = 'Loaded';
+        // console.log(dronesData);
+
+        let dronesselect = document.getElementById('drones');
+
+        $.each(dronesData, function (i, item) {
+          $('#drones').append($('<option>', {
+            text : item
+          }));
+        });
+
+        $('select').formSelect();
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('select');
+        var instances = M.FormSelect.init(elems, {});
+
+        var elems = document.querySelectorAll('.datepicker');
+        var instances = M.Datepicker.init(elems, {
+          defaultDate: new Date(),
+          setDefaultDate: true
+        });
+
+        var elems = document.querySelectorAll('.chips');
+        var instances = M.Chips.init(elems, {});
+      });
+
+      function fetchFlightIDsNOthers(){
+        document.getElementById('status').innerText = 'Please Wait...';
+        document.getElementById('flightstablediv').innerHTML = '';
+
+        let dronesSelect = document.getElementById('drones');
+        let droneSheet = dronesSelect.options[dronesSelect.selectedIndex].text;
+        if(droneSheet == 'Select Drone'){
+          document.getElementById('status').innerHTML = '<span style="color:red">Select Drone Number...</span>';
+          setTimeout(()=>{
+            document.getElementById('status').innerText = '';
+          }, 2000);
+          return 0;
+        }
+
+        google.script.run.withSuccessHandler(handleFlightIDsNOthers).getFlightIDsNOthers(droneSheet);
+      }
+
+      function handleFlightIDsNOthers(data){
+        console.log(data);
+        let flightIDs = data[0];
+        let currentSheet = data[1];
+
+        let flightlinesIDs = data[2];
+        let plannedareasIDs = data[3];
+        let abadilimitsIDs = data[4];
+
+        let tableHTML = '<table border="1" class="flightstable" style="border-collapse: collapse;">';
+        for (let i = 0; i < flightIDs.length; i++){
+          tableHTML += '<tr><td colspan="2"><b>' + flightIDs[i].id + ' (' + flightIDs[i].date + ')</b></td></tr>';
+          
+          let isFlightIDAvail = false;
+          for (let f = 0; f < flightlinesIDs.length; f++){
+            let flightlinesID = flightlinesIDs[f];
+            if(flightIDs[i].id == flightlinesID){
+              isFlightIDAvail = true;
+            }
+          }
+
+          if(isFlightIDAvail){
+            tableHTML += '<tr id="flight_' + flightIDs[i].id +'"><td>';
+            tableHTML += '<button category="flight" flightid="' + flightIDs[i].id +'" onclick="loadgeojsonfromserver(this)">';
+            tableHTML += 'Load Flight Line</button></td>';
+            tableHTML += '<td><button category="flight" flightid="' + flightIDs[i].id +'" onclick="zoomtolayer(this)">';
+            tableHTML += 'Zoom It</button>' + '</td><tr>';
+          } else {
+            tableHTML += '<tr id="flight_' + flightIDs[i].id +'"><td><b style="color:red;">Flight Line (KML Only)</b><br/>';
+            tableHTML += '<input type="file" flightid="' + flightIDs[i].id +'" onchange="flightlinechange(this)"/></td>';
+            tableHTML += '<td>' +  '<button flightid="' + flightIDs[i].id +'" onclick="uploadflightline(this)">Upload KML</button>' + '</td><tr>';
+          }
+
+          let isPlannedAreaIDAvail = false;
+          for (let p = 0; p < plannedareasIDs.length; p++){
+            let plannedareasID = plannedareasIDs[p];
+            if(flightIDs[i].id == plannedareasID){
+              isPlannedAreaIDAvail = true;
+            }
+          }
+
+          if(isPlannedAreaIDAvail){
+            tableHTML += '<tr id="planned_' + flightIDs[i].id +'"><td>';
+            tableHTML += '<button category="planned" flightid="' + flightIDs[i].id +'" onclick="loadgeojsonfromserver(this)">';
+            tableHTML += 'Load Planned Area</button></td>';
+            tableHTML += '<td><button category="planned" flightid="' + flightIDs[i].id +'" onclick="zoomtolayer(this)">';
+            tableHTML += 'Zoom It</button>' + '</td><tr>';
+          } else {
+            tableHTML += '<tr id="planned_' + flightIDs[i].id +'"><td><b style="color:red;">Planned Area (Shapefile Zip)</b><br/>';
+            tableHTML += '<input type="file" flightid="' + flightIDs[i].id +'" onchange="plannedareachange(this)"/></td>';
+            tableHTML += '<td>' +  '<button flightid="' + flightIDs[i].id +'" onclick="uploadplannedarea(this)">Upload Shapefile</button>' ;
+            tableHTML += '</td><tr>';
+          }
+
+          let isAbadiLimitIDAvail = false;
+          for (let a = 0; a < abadilimitsIDs.length; a++){
+            let abadilimitsID = abadilimitsIDs[a];
+            if(flightIDs[i].id == abadilimitsID){
+              isAbadiLimitIDAvail = true;
+            }
+          }
+
+          if(isAbadiLimitIDAvail){
+            tableHTML += '<tr id="abadi_' + flightIDs[i].id +'"><td>';
+            tableHTML += '<button category="abadi" flightid="' + flightIDs[i].id +'" onclick="loadgeojsonfromserver(this)">';
+            tableHTML += 'Load Abadi Limit</button></td>';
+            tableHTML += '<td><button category="abadi" flightid="' + flightIDs[i].id +'" onclick="zoomtolayer(this)">';
+            tableHTML += 'Zoom It</button>' + '</td><tr>';
+          } else {
+            tableHTML += '<tr id="abadi_' + flightIDs[i].id +'"><td><b style="color:red;">Abadi Limit (KML / KMZ)</b><br/>';
+            tableHTML += '<input type="file" flightid="' + flightIDs[i].id +'" onchange="abadilimitchange(this)"/></td>';
+            tableHTML += '<td>' +  '<button flightid="' + flightIDs[i].id +'" onclick="uploadabadilimit(this)">';
+            tableHTML += 'Upload KML/KMZ</button>' + '</td><tr>';
+          }
+
+          tableHTML += '<tr><td colspan="2"></td></tr>';
+        }
+        tableHTML += '</table>';
+
+        document.getElementById('flightstablediv').innerHTML = tableHTML;
+        document.getElementById('status').innerText = 'Select Geotagged Generated KML';
+      }
+
+      //  -----------------------------------------------------------------------------------------------------------------------
+      //  Loader and Viewer Functions
+      function loadgeojsonfromserver(el){
+        let flightid = $(el).attr('flightid');
+        let category = $(el).attr('category');
+
+        document.getElementById('status').innerHTML = '<span style="color:orange"> ' + category + ' for ' + flightid + ' loading...</span>';
+        google.script.run.withSuccessHandler(handleGeoJSONFromServer)
+          .withUserObject([flightid, category]).loadgeojsonfromserver([flightid, category]);
+      }
+
+      function handleGeoJSONFromServer(data, obj){
+        let flightid = obj[0];
+        let category = obj[1];
+
+        let geojson = JSON.parse(data);
+
+        fObj[flightid] = {
+          ...fObj[flightid],
+          [category]: {
+            'gj': geojson,
+            'gjvalid': true
+          }
+        };
+
+        fObj[flightid][category] = {
+          ...fObj[flightid][category],
+          'gjlyr': L.geoJSON(null, {style: styleloader(category)}).addTo(mymap)
+        };
+
+        fObj[flightid][category]['gjlyr'].addData(fObj[flightid][category]['gj']);
+
+        document.getElementById('status').innerHTML = '<span style="color:blue"> ' + category + ' for ' + flightid + ' loaded...</span>';
+
+        console.log(fObj);
+      }
+
+      function styleloader(category) {
+        console.log(category);
+        if(category == 'flight'){
+          return {
+            weight: 2,
+            color: 'white'
+          };
+        } else if(category == 'planned'){
+          return {
+            weight: 2,
+            color: 'green'
+          };
+        } else if(category == 'abadi'){
+          return {
+            weight: 2,
+            color: 'yellow'
+          };
+        }
+      }
+
+      function zoomtolayer(el){
+        let flightid = $(el).attr('flightid');
+        let category = $(el).attr('category');
+
+        try{
+          mymap.fitBounds(fObj[flightid][category]['gjlyr'].getBounds());
+        } catch (e) {
+          document.getElementById('status').innerHTML = '<span style="color:red">First Load ' + category + ' in ' + flightid + ' ...</span>';
+        }
+      }
+
+      //  -----------------------------------------------------------------------------------------------------------------------
+      //  Flightline Functions
+
+      function flightlinechange(el){
+        console.log('flightlinechange');
+
+        let flightid = $(el).attr('flightid');
+        fObj['currentid'] = flightid;
+
+        let file = $(el).prop('files')[0];
+        // console.log(file);
+
+        if(file.type == 'application/vnd.google-earth.kml+xml'){
+          fObj[flightid] = {
+            ...fObj[flightid],
+            'flight':{
+              'gjvalid': true
+            }
+          };
+
+          document.getElementById('status').innerHTML = '<span style="color:green">Valid KML...</span>';
+
+          let reader = new FileReader();
+          reader.readAsText(file);
+          reader.onload = loadFlightKML;
+        } else {
+          fObj[flightid] = {
+            ...fObj[flightid],
+            'flight':{
+              'gjvalid': false
+            }
+          };
+
+          document.getElementById('status').innerHTML = '<span style="color:red">Select Valid KML Flightline...</span>';
+          $(el).val(null);
+        }
+      }
+
+      function loadFlightKML(evt){
+        let kmltext = evt.target.result;
+        
+        const parser = new DOMParser();
+        const kml = parser.parseFromString(kmltext, 'text/xml');
+        // console.log(kml);
+
+        var geojsonFlight = toGeoJSON.kml(kml);
+        let features = geojsonFlight.features;
+        // console.log(features);
+
+        features = features.filter((feature) => {
+          return feature.geometry.type == 'LineString'
+        });
+
+        for (let i = 0; i < features.length; i++){
+          let feature = features[i];
+          let featGeomCoords = feature.geometry.coordinates;
+
+          let numberofCoordsReqd = 500 * 2;
+          let modulus = parseInt(featGeomCoords.length / numberofCoordsReqd);
+          // console.log(modulus);
+          
+          featGeomCoords = featGeomCoords.filter((element, index) => {
+            return index % modulus == 0;
+          });
+
+          feature.geometry.coordinates = featGeomCoords;
+        }
+
+        let geojsonFlightLine = {
+          type: "FeatureCollection",
+          features: features
+        }
+
+        // console.log(geojsonFlightLine);
+
+        let flightid = fObj['currentid'];
+
+        fObj[flightid]['flight'] = {
+          ...fObj[flightid]['flight'],
+          'gjlyr': L.geoJSON(null, {style: styleflightline}).addTo(mymap)
+        };
+
+        fObj[flightid]['flight']['gjlyr'].addData(geojsonFlightLine);
+
+        mymap.fitBounds(fObj[flightid]['flight']['gjlyr'].getBounds());
+
+        fObj[flightid]['flight'] = {
+          ...fObj[flightid]['flight'],
+          'gj': geojsonFlightLine
+        };
+
+        console.log(fObj);
+      }
+
+      function styleflightline(feature) {
+          return {
+              weight: 2,
+              color: 'red'
+          };
+      }
+
+      function uploadflightline(el){
+        let flightid = $(el).attr('flightid');
+        console.log(flightid);
+
+        let validflightline = false;
+        try{
+          validflightline = fObj[flightid]['flight']['gjvalid'];
+        } catch(e) {}
+        
+        if(validflightline){
+          let geoJSONFlightLine = fObj[flightid]['flight']['gj'];
+          
+          google.script.run.withSuccessHandler(handleFlightResponse)
+          .withUserObject([flightid, 'Flight Line']).uploadFlightGeoJSON([flightid, JSON.stringify(geoJSONFlightLine)]);
+
+          document.getElementById('status').innerHTML = '<span style="color:orange">Please Wait... Uploading...</span>';
+        } else {
+          document.getElementById('status').innerHTML = '<span style="color:red">Select Some KML Flightline...</span>';
+        }
+      }
+
+      function handleFlightResponse(msg, userObj){
+        console.log(userObj);
+        let flightid = userObj[0];
+        let category = userObj[1];
+
+        document.getElementById('status').innerHTML = '<span style="color:blue">Uploaded ' + category + ' for ' + flightid + '</span>';
+        
+        let updatedRowHTML = '<td><button category="flight" flightid="' + flightid +'" ';
+        updatedRowHTML += 'onclick="loadgeojsonfromserver(this)">';
+        updatedRowHTML += 'Load Flight Line</button></td>';
+        updatedRowHTML += '<td><button category="flight" flightid="' + flightid +'" onclick="zoomtolayer(this)">';
+        updatedRowHTML += 'Zoom It</button>' + '</td>';
+
+        let rowID = 'flight_' + flightid;
+        document.getElementById(rowID).innerHTML = updatedRowHTML;
+      }
+
+      //  -----------------------------------------------------------------------------------------------------------------------
+      //  Planned Area Functions
+
+      function plannedareachange(el){
+        console.log('plannedareachange');
+
+        let flightid = $(el).attr('flightid');
+        fObj['currentid'] = flightid;
+
+        if(fObj[flightid] == null){
+          document.getElementById('status').innerHTML = '<span style="color:orange">Load Flight Line First...</span>';
+          $(el).val(null);
+          return 0;
+        } else if (fObj[flightid]['flight'] == null){
+          document.getElementById('status').innerHTML = '<span style="color:orange">Load Flight Line First...</span>';
+          $(el).val(null);
+          return 0;
+        } else if (fObj[flightid]['flight']['gj'] == null){
+          document.getElementById('status').innerHTML = '<span style="color:orange">Load Flight Line First...</span>';
+          $(el).val(null);
+          return 0;
+        }
+
+        let file = $(el).prop('files')[0];
+        // console.log(file.type);
+
+        if(file.type == 'application/x-zip-compressed'){
+          fObj[flightid] = {
+            ...fObj[flightid],
+            'planned':{
+              'gjvalid': true
+            }
+          };
+
+          document.getElementById('status').innerHTML = '<span style="color:green">Valid Shapefile Zip...</span>';
+
+          let reader = new FileReader();
+          reader.readAsArrayBuffer(file);
+          reader.onload = loadShapefile;
+        } else {
+          fObj[flightid] = {
+            ...fObj[flightid],
+            'planned':{
+              'gjvalid': false
+            }
+          };
+
+          let errHTML = '<span style="color:red">Select Valid Shapefile Zip...</span>';
+          document.getElementById('status').innerHTML = errHTML;
+          $(el).val(null);
+        }
+      }
+
+      function loadShapefile(evt){
+        let shapefileArryBuffer = evt.target.result;
+
+        shp(shapefileArryBuffer).then(function(geojson){
+          if(Array.isArray(geojson)){
+            geojsonFiles = geojson                 
+          } else {
+            geojsonFiles = [geojson]
+          }
+
+          // console.log(geojsonFiles);
+
+          let flightid = fObj['currentid'];
+
+          let flightlinebbox = turf.bbox(fObj[flightid]['flight']['gj']);
+          let flightbboxPoly = turf.bboxPolygon(flightlinebbox);
+
+          let totalFeatureCount = 0;
+          let newgeojsonshapefeatures = [];
+
+          for (let f = 0; f < geojsonFiles.length; f++){
+            let geojsonshapes = geojsonFiles[f];
+
+            let geojsonshapefeatures = geojsonshapes.features;
+            geojsonshapefeatures = geojsonshapefeatures.filter((feature) => {
+              return feature.geometry.type == 'Polygon'
+            });
+
+            for (let i = 0; i < geojsonshapefeatures.length; i++){
+              let shapefilebbox = turf.bbox(geojsonshapefeatures[i]);
+              let shapebboxPoly = turf.bboxPolygon(shapefilebbox);
+
+              let intersection = turf.intersect(flightbboxPoly, shapebboxPoly);
+              if(intersection != null) newgeojsonshapefeatures.push(geojsonshapefeatures[i]);
+
+              totalFeatureCount++;
+            }
+          }
+
+          let overlappingFeaturesCount = newgeojsonshapefeatures.length;
+          
+          let overlappingMsg = '<span style="color:green">' + overlappingFeaturesCount + ' out of ' + totalFeatureCount ;
+          overlappingMsg += ' Features overlaps Flight Line </span>';
+
+          setTimeout(()=>{
+            document.getElementById('status').innerHTML = overlappingMsg;
+          }, 2000);
+
+          if(overlappingFeaturesCount == 0){
+            return 0;
+          }
+
+          let newgeojsonShapefile = {
+            type: "FeatureCollection",
+            features: newgeojsonshapefeatures,
+            fileName: 'PlannedArea'
+          }
+
+          // console.log(newgeojsonShapefile);
+
+          fObj[flightid]['planned'] = {
+            ...fObj[flightid]['planned'],
+            'gjlyr': L.geoJSON(null, {style: styleplannedarea}).addTo(mymap)
+          };
+
+          fObj[flightid]['planned']['gjlyr'].addData(newgeojsonShapefile);
+
+          mymap.fitBounds(fObj[flightid]['planned']['gjlyr'].getBounds());
+
+          fObj[flightid]['planned'] = {
+            ...fObj[flightid]['planned'],
+            'gj': newgeojsonShapefile
+          };
+
+          console.log(fObj);
+        });
+      }
+
+      function styleplannedarea(feature) {
+          return {
+              weight: 2,
+              color: 'green'
+          };
+      }
+
+      function uploadplannedarea(el){
+        let flightid = $(el).attr('flightid');
+        console.log(flightid);
+
+        let validplannedarea = false;
+        try{
+          validplannedarea = fObj[flightid]['planned']['gjvalid'];
+        } catch(e) {}
+        
+        if(validplannedarea){
+          let geoJSONPlannedArea = fObj[flightid]['planned']['gj'];
+          
+          google.script.run.withSuccessHandler(handlePlannedAreaResponse)
+          .withUserObject([flightid, 'Planned Area']).uploadPlannedAreaGeoJSON([flightid, JSON.stringify(geoJSONPlannedArea)]);
+
+          document.getElementById('status').innerHTML = '<span style="color:orange">Please Wait... Uploading...</span>';
+        } else {
+          document.getElementById('status').innerHTML = '<span style="color:red">Select Some Shapefile Zip...</span>';
+        }
+      }
+
+      function handlePlannedAreaResponse(msg, userObj){
+        console.log(userObj);
+        let flightid = userObj[0];
+        let category = userObj[1];
+
+        document.getElementById('status').innerHTML = '<span style="color:blue">Uploaded ' + category + ' for ' + flightid + '</span>';
+        
+        let updatedRowHTML = '<td>';
+        updatedRowHTML += '<button category="planned" flightid="' + flightid +'" onclick="loadgeojsonfromserver(this)">';
+        updatedRowHTML += 'Load Planned Area</button></td>';
+        updatedRowHTML += '<td><button category="planned" flightid="' + flightid +'" onclick="zoomtolayer(this)">';
+        updatedRowHTML += 'Zoom It</button>' + '</td>';
+
+        let rowID = 'planned_' + flightid;
+        document.getElementById(rowID).innerHTML = updatedRowHTML;
+      }
+
+      //  -----------------------------------------------------------------------------------------------------------------------
+      //  Abadi Limit Functions
+
+      function abadilimitchange(el){
+        console.log('abadilimitchange');
+
+        let flightid = $(el).attr('flightid');
+        fObj['currentid'] = flightid;
+
+        if(fObj[flightid] == null){
+          document.getElementById('status').innerHTML = '<span style="color:orange">Load Flight Line First...</span>';
+          $(el).val(null);
+          return 0;
+        } else if (fObj[flightid]['flight'] == null){
+          document.getElementById('status').innerHTML = '<span style="color:orange">Load Flight Line First...</span>';
+          $(el).val(null);
+          return 0;
+        } else if (fObj[flightid]['flight']['gj'] == null){
+          document.getElementById('status').innerHTML = '<span style="color:orange">Load Flight Line First...</span>';
+          $(el).val(null);
+          return 0;
+        }
+
+        let file = $(el).prop('files')[0];
+        console.log(file.type);
+
+        if(file.type == 'application/vnd.google-earth.kml+xml'){
+          fObj[flightid] = {
+            ...fObj[flightid],
+            'abadi':{
+              'gjvalid': true
+            }
+          };
+
+          document.getElementById('status').innerHTML = '<span style="color:green">Valid KML...</span>';
+
+          let reader = new FileReader();
+          reader.readAsText(file);
+          reader.onload = loadAbadiLimitKML;
+
+        } else if (file.type == 'application/vnd.google-earth.kmz'){
+          
+          loadAndHandleKMZ(file);
+
+        } else {
+
+          fObj[flightid] = {
+            ...fObj[flightid],
+            'abadi':{
+              'gjvalid': false
+            }
+          };
+
+          document.getElementById('status').innerHTML = '<span style="color:red">Select Valid KML Abadi Limit...</span>';
+          $(el).val(null);
+        }
+      }
+
+      function loadAbadiLimitKML(evt){
+        let kmltext = evt.target.result;
+        
+        const parser = new DOMParser();
+        const kml = parser.parseFromString(kmltext, 'text/xml');
+        // console.log(kml);
+
+        let geojsonAbadiLimit = toGeoJSON.kml(kml);
+        console.log(geojsonAbadiLimit);
+
+        let flightid = fObj['currentid'];
+
+        let flightlinebbox = turf.bbox(fObj[flightid]['flight']['gj']);
+        let flightbboxPoly = turf.bboxPolygon(flightlinebbox);
+
+        let totalFeatureCount = 0;
+        let newgeojsonshapefeatures = [];
+
+        let geojsonshapefeatures = geojsonAbadiLimit.features;
+        // geojsonshapefeatures = geojsonshapefeatures.filter((feature) => {
+        //   return feature.geometry.type == 'Polygon'
+        // });
+
+        for (let i = 0; i < geojsonshapefeatures.length; i++){
+          let shapefilebbox = turf.bbox(geojsonshapefeatures[i]);
+          let shapebboxPoly = turf.bboxPolygon(shapefilebbox);
+
+          let intersection = turf.intersect(flightbboxPoly, shapebboxPoly);
+          if(intersection != null) newgeojsonshapefeatures.push(geojsonshapefeatures[i]);
+
+          totalFeatureCount++;
+        }
+
+        let overlappingFeaturesCount = newgeojsonshapefeatures.length;
+        
+        let overlappingMsg = '<span style="color:green">' + overlappingFeaturesCount + ' out of ' + totalFeatureCount ;
+        overlappingMsg += ' Features overlaps Flight Line </span>';
+
+        setTimeout(()=>{
+          document.getElementById('status').innerHTML = overlappingMsg;
+        }, 2000);
+
+        if(overlappingFeaturesCount == 0){
+          return 0;
+        }
+
+        let newgeojsonShapefile = {
+          type: "FeatureCollection",
+          features: newgeojsonshapefeatures,
+          fileName: 'AbadiLimits'
+        }
+
+        fObj[flightid]['abadi'] = {
+          ...fObj[flightid]['abadi'],
+          'gjlyr': L.geoJSON(null, {style: styleabadilimit}).addTo(mymap)
+        };
+
+        fObj[flightid]['abadi']['gjlyr'].addData(newgeojsonShapefile);
+
+        mymap.fitBounds(fObj[flightid]['abadi']['gjlyr'].getBounds());
+
+        fObj[flightid]['abadi'] = {
+          ...fObj[flightid]['abadi'],
+          'gj': newgeojsonShapefile
+        };
+
+        console.log(fObj);
+      }
+
+      function styleabadilimit(feature) {
+          return {
+              weight: 2,
+              color: 'yellow'
+          };
+      }
+
+      function loadAndHandleKMZ(file){
+        let flightid = fObj['currentid'];
+
+        fObj[flightid] = {
+          ...fObj[flightid],
+          'abadi':{
+            'gjvalid': true
+          }
+        };
+
+        document.getElementById('status').innerHTML = '<span style="color:green">Valid KMZ...</span>';
+
+        let getDom = xml => (new DOMParser()).parseFromString(xml, "text/xml");
+        let getExtension = fileName => fileName.split(".").pop();
+
+        let getKmlDom = (kmzFile) => {
+          var zip = new JSZip()
+          return zip.loadAsync(kmzFile)
+            .then(zip => {
+              let kmlDom = null
+              zip.forEach((relPath, file) => {
+                if (getExtension(relPath) === "kml" && kmlDom === null) {
+                  kmlDom = file.async("string").then(getDom)
+                }
+              })
+              return kmlDom || Promise.reject("No kml file found")
+            });
+        }
+
+        let geoJsonAbadi = getKmlDom(file).then(kmlDom => {
+          let geoJsonObject = toGeoJSON.kml(kmlDom)
+          // return JSON.stringify(geoJsonObject);
+          return geoJsonObject;
+        });
+
+        fObj[flightid]['abadi'] = {
+          ...fObj[flightid]['abadi'],
+          'gjlyr': L.geoJSON(null, {style: styleabadilimit}).addTo(mymap)
+        };
+
+        geoJsonAbadi.then(geojsonAbadiLimit => {
+          console.log(geojsonAbadiLimit);
+
+          let flightlinebbox = turf.bbox(fObj[flightid]['flight']['gj']);
+          let flightbboxPoly = turf.bboxPolygon(flightlinebbox);
+
+          let totalFeatureCount = 0;
+          let newgeojsonshapefeatures = [];
+
+          let geojsonshapefeatures = geojsonAbadiLimit.features;
+          // geojsonshapefeatures = geojsonshapefeatures.filter((feature) => {
+          //   return feature.geometry.type == 'Polygon'
+          // });
+
+          for (let i = 0; i < geojsonshapefeatures.length; i++){
+            let shapefilebbox = turf.bbox(geojsonshapefeatures[i]);
+            let shapebboxPoly = turf.bboxPolygon(shapefilebbox);
+
+            let intersection = turf.intersect(flightbboxPoly, shapebboxPoly);
+            if(intersection != null) newgeojsonshapefeatures.push(geojsonshapefeatures[i]);
+
+            totalFeatureCount++;
+          }
+
+          let overlappingFeaturesCount = newgeojsonshapefeatures.length;
+          
+          let overlappingMsg = '<span style="color:green">' + overlappingFeaturesCount + ' out of ' + totalFeatureCount ;
+          overlappingMsg += ' Features overlaps Flight Line </span>';
+
+          setTimeout(()=>{
+            document.getElementById('status').innerHTML = overlappingMsg;
+          }, 2000);
+
+          if(overlappingFeaturesCount == 0){
+            return 0;
+          }
+
+          let newgeojsonShapefile = {
+            type: "FeatureCollection",
+            features: newgeojsonshapefeatures,
+            fileName: 'AbadiLimits'
+          }
+
+          fObj[flightid]['abadi']['gjlyr'].addData(newgeojsonShapefile);
+
+          mymap.fitBounds(fObj[flightid]['abadi']['gjlyr'].getBounds());
+
+          fObj[flightid]['abadi'] = {
+            ...fObj[flightid]['abadi'],
+            'gj': newgeojsonShapefile
+          };
+
+          console.log(fObj);
+        });
+      }
+
+      function uploadabadilimit(el){
+        let flightid = $(el).attr('flightid');
+        console.log(flightid);
+
+        let validabadilimit = false;
+        try{
+          validabadilimit = fObj[flightid]['abadi']['gjvalid'];
+        } catch(e) {}
+        
+        if(validabadilimit){
+          let geoJSONAbadiLimit = fObj[flightid]['abadi']['gj'];
+          
+          google.script.run.withSuccessHandler(handleAbadiLimitResponse)
+          .withUserObject([flightid, 'Abadi Limit']).uploadAbadiLimitGeoJSON([flightid, JSON.stringify(geoJSONAbadiLimit)]);
+
+          document.getElementById('status').innerHTML = '<span style="color:orange">Please Wait... Uploading...</span>';
+        } else {
+          document.getElementById('status').innerHTML = '<span style="color:red">Select Some KML / KMZ Abadi Limit...</span>';
+        }
+      }
+
+      function handleAbadiLimitResponse(msg, userObj){
+        console.log(userObj);
+        let flightid = userObj[0];
+        let category = userObj[1];
+
+        document.getElementById('status').innerHTML = '<span style="color:blue">Uploaded ' + category + ' for ' + flightid + '</span>';
+        
+        let updatedRowHTML = '<td>';
+        updatedRowHTML += '<button category="abadi" flightid="' + flightid +'" onclick="loadgeojsonfromserver(this)">';
+        updatedRowHTML += 'Load Abadi Limit</button></td>';
+        updatedRowHTML += '<td><button category="abadi" flightid="' + flightid +'" onclick="zoomtolayer(this)">';
+        updatedRowHTML += 'Zoom It</button>' + '</td>';
+
+        let rowID = 'abadi_' + flightid;
+        document.getElementById(rowID).innerHTML = updatedRowHTML;
+      }
+
+      //  -----------------------------------------------------------------------------------------------------------------------
+      //  Basemap Functions
+
+      function getReadyMapLayer(){
+        mymap = L.map('mapid').setView([14.8810453,76.273253], 7);
+        let options = { modal: true, title: "Box Area Zoom" };
+        let control = L.control.zoomBox(options);
+        mymap.addControl(control);
+
+        mymap.on('mousemove', latlngDisp);
+
+        loadBaseMap();
+      }
+
+      function loadBaseMap(){
+        basemaplyr = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3']
+        });
+        
+        basemaplyr.addTo(mymap);
+      }
+      
+      function latlngDisp(e) {
+        $('#latlngDiv').text(e.latlng.toString());
+      }
+    </script>
+  </body>
+</html>

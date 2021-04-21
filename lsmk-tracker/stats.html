@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Statistics</title>
+
+    <link rel="stylesheet" href="css/materialize.min.css">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png"/>
+
+    <style>
+      html, body {
+          margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <form class="col s12" id="stats-form" style="display: inline-block;text-align: center; min-width: 80vw;">
+      <div class="row">
+          <div class="input-field col s4">
+              <button type="button" onclick="getRowsSheetDataForPivot();">Download CSV For Pivot</button>
+          </div>
+      </div>
+    </form>
+
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script src="js/materialize.min.js"></script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = io();
+        
+        function getRowsSheetDataForPivot(){
+          socket.emit('getRowsSheetDataForPivot');
+        }
+
+        socket.on('handleRowsSheetDataForPivot', function(data){
+          let xl2Ddata = data[0].values;
+          
+          let csvRows = [];
+
+          console.log(xl2Ddata);
+
+          for (let i = 0; i < xl2Ddata.length; i++){
+            let xlRow = xl2Ddata[i];
+
+            let villages = xlRow[18];
+            let villagesArry = villages.split(",");
+
+            for (let j = 0; j < villagesArry.length; j++){
+              xlRow[18] = villagesArry[j].trim();
+              csvRows.push(xlRow);
+            }
+          }
+
+          exportToCsv("Flights_Pivot.csv", csvRows);
+        });
+    </script>
+
+    <script>
+      function exportToCsv(filename, rows) {
+        let processRow = function (row) {
+            let finalVal = '';
+            for (let j = 0; j < row.length; j++) {
+                let innerValue = row[j] === null ? '' : row[j].toString();
+                let result = innerValue.replace(/"/g, '""');
+                if (result.search(/("|,|\n)/g) >= 0)
+                    result = '"' + result + '"';
+                if (j > 0)
+                    finalVal += ',';
+                finalVal += result;
+            }
+            return finalVal + '\n';
+        };
+
+        let csvFile = '';
+        for (let i = 0; i < rows.length; i++) {
+            csvFile += processRow(rows[i]);
+        }
+
+        let blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+        if (navigator.msSaveBlob) { // IE 10+
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            let link = document.createElement("a");
+            if (link.download !== undefined) { // feature detection
+                // Browsers that support HTML5 download attribute
+                let url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+      }
+    </script>
+
+  </body>
+</html>

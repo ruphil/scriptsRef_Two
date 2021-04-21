@@ -1,0 +1,442 @@
+<div class="progress" id="progress-bar">
+    <div class="indeterminate"></div>
+</div>
+
+<div id="doc-content" style="display:none">
+    <ul class="collection">
+        <li class="collection-item">Flights Register - Register the Following Information for Each Drone Take-Off... All Fields marked with * are mandatory...</li>
+        <li class="collection-item"><a class="waves-effect waves-light btn modal-trigger" href="#editflightsmodal" onclick="getFlightsForEditing();">Edit / Export Flights</a></li>
+    </ul>
+
+    <div id="editflightsmodal" class="modal" style="width: 90% !important ; height: 90% !important;">
+        <div class="modal-content">
+        <h4>Edit Flights<a class="btn grey right modal-close" title="close"><i class="large material-icons">close</i></a><a class="btn green right" title="Export Flights" onclick="exportToCSVAllEditFlights();"><i class="large material-icons">cloud_download</i></a></h4>
+            <table class="highlight centered" id="searched-flights">
+                <thead>
+                    <tr class="table-success">
+                        <th class="brown-text darken-2">Flight ID</th>
+                        <th class="brown-text darken-2">Flight Date / Timings</th>
+                        <th class="brown-text darken-2">Pilot / Co-Pilot</th>
+                        <th class="brown-text darken-2">Flight Information</th>
+                        <th class="brown-text darken-2">View / Edit Flight</th>
+                        <th class="brown-text darken-2">Mark / Unmark for Deletion</th>
+                    </tr>
+                </thead>
+        
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <form class="col s12" id="flights-form">
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="dronenumber">
+                    <option disabled selected>Select Your Drone Number</option>
+                </select>
+                <label class="unselectable">Select Your Drone Number *</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="uniqueQBaseFlightNo" step="1" class="validate">
+                <label class="unselectable">Flight Number from QBase (1 - 500) *</label>
+            </div>
+        </div>
+
+        <ul class="collection">
+            <li class="collection-item blue white-text" id="flightID">Flight ID: </li>
+        </ul>
+
+        <div class="row">
+            <div class="input-field col s4">
+                <input type="date" id="flightdate">
+                <label class="unselectable">Flight Date *</label>
+            </div>
+
+            <div class="input-field col s3">
+                <input type="time" id="takeofftime">
+                <label class="unselectable">Takeoff Time *</label>
+            </div>
+
+            <div class="input-field col s3">
+                <input type="time" id="landingtime">
+                <label class="unselectable">Landing Time *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="flightcategory">
+                    <option disabled selected>Flight Project / Category</option>
+                    <option>LSMK / Svamitva</option>
+                    <option>Svamitva</option>
+                    <option>LSMK</option>
+                    <option>Unsuccessful - Poor Weather</option>
+                    <option>Unsuccessful - Technical Issue</option>
+                </select>
+                <label class="unselectable">Flight Project / Category *</label>
+            </div>
+
+            <div class="input-field col s5">
+                <select id="flightnumber">
+                    <option disabled selected>Select Flight</option>
+                    <option>FLY-1</option>
+                    <option>FLY-2</option>
+                    <option>FLY-3</option>
+                    <option>FLY-4</option>
+                    <option>FLY-5</option>
+                    <option>FLY-6</option>
+                </select>
+                <label class="unselectable">Flight for the Day *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="flighttype">
+                    <option disabled selected>Select Type</option>
+                    <option>Fresh</option>
+                    <option>Refly</option>
+                </select>
+                <label class="unselectable">Fresh / Refly *</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="area" step="0.01" class="validate">
+                <label class="unselectable">Area Covered In sq.km *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="pilot">
+                    <option value="" disabled selected>Select Pilot</option>
+                </select>
+                <label class="unselectable">Select Pilot *</label>
+            </div>
+
+            <div class="input-field col s5">
+                <select id="copilot">
+                    <option disabled selected>Select Co-Pilot</option>
+                </select>
+                <label class="unselectable">Select Co-Pilot *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="trainingflight">
+                    <option disabled selected>Select Yes / No</option>
+                    <option>No</option>
+                    <option>Yes</option>
+                </select>
+                <label class="unselectable">Whether Training Flight *</label>
+            </div>
+
+            <div class="input-field col s5">
+              <input id="campingarea" type="text" class="validate">
+              <label class="unselectable">Camping Area *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="district">
+                    <option disabled selected>Select District</option>
+                </select>
+                <label class="unselectable">Select District *</label>
+            </div>
+
+            <div class="input-field col s5">
+                <select id="taluk">
+                    <option disabled selected>Select Taluk</option>
+                </select>
+                <label class="unselectable">Select Taluk *</label>
+            </div>
+        </div>
+
+        <div id="lsmkorsvamitvavillages">
+            <div class="row">
+                <div class="input-field col s5">
+                <input id="grampanchayat" type="text" class="validate">
+                <label class="unselectable">Gram Panchayat *</label>
+                </div>
+
+                <div class="input-field col s5">
+                    <input id="villages" type="text" class="validate">
+                    <label class="unselectable">Villages Name * <span style="font-size: xx-small;">(separated by commas)</span></label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <label class="unselectable">Select Shapefile Used For Mission Planning after Zipping (Eg:- RN36-H1.zip) (For More Help, Refer <a style="color:blue" target="_blank" href="https://drive.google.com/file/d/1x0RMVSlp8TD2h2-GJ7xnBNCrJWhOGch4/view?usp=sharing">SOP for Uploading Shapefiles</a>)</label><br/><br/><br/>
+                <input type="file" class="form-control-file" id="shapefile-fileinput" onchange="readShapeFiles();">
+                <small id="shapefile-status" class="text-warning">Select *.zip file</small>
+                <button type="button" style="display: none;" onclick="geoJSONDownload();">Download GeoJSON</button><br/>
+                <div style="font-size: 0.5em" class="text-secondary">Help:</div>
+                <div style="font-size: 0.5em" class="text-secondary">✓ Kindly Enter Into Shapefiles Folder</div>
+                <div style="font-size: 0.5em" class="text-secondary">✓ Select All Files *.cpg, *.dbf, *.prj, *.sbn, *.sbx, *.shp, *.shx, *.shp.xml</div>
+                <div style="font-size: 0.5em" class="text-secondary">✓ Right Click And Send To Compressed (zipped) folder</div>
+                <div style="font-size: 0.5em" class="text-secondary">✓ Size of Zip File Shoud Be Less Than 40 kB</div>
+                <div style="font-size: 0.5em" class="text-secondary">✓ Choose Geographic Coordinate Systems > World > WGS 1984</div>
+                <div id="geoObjStr" style="display:none"></div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="number" id="totalabadi" step="1">
+                <label class="unselectable">Total Number of Settlements (Abadi Areas) in Entire Village</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="totalhamlet" step="1">
+                <label class="unselectable">Total Number of New Hamlets in Entire Village</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="number" id="currentabadi" step="1">
+                <label class="unselectable">Number of Settlements (Abadi Areas) in Current Flight</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="currenthamlet" step="1">
+                <label class="unselectable">Number of New Hamlets in Current Flight</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="chunnamarked">
+                    <option disabled selected>Select Yes / No</option>
+                    <option>Yes</option>
+                    <option>No</option>
+                </select>
+                <label class="unselectable">Chunna Marking Done</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="text" id="pocketids">
+                <label class="unselectable">Settlement / Hamlet Names</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="text" id="gridno">
+                <label class="unselectable">Name of Flying Grid in respect of LSMK</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s3">
+                <input type="number" id="temperature" step="0.01">
+                <label class="unselectable">Temperature (°C)</label>
+            </div>
+
+            <div class="input-field col s3">
+                <input type="number" id="anemowind" step="0.01">
+                <label class="unselectable">Wind Speed In Anemometer (m/s)</label>
+            </div>
+
+            <div class="input-field col s3">
+                <input type="number" id="qbasewind" step="0.01">
+                <label class="unselectable">Wind Speed In QBase (m/s)</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="text" id="overlap">
+                <label class="unselectable">Forward / Side Overlap (Eg. 80/80)</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="text" id="extension">
+                <label class="unselectable">Entry / Exit Extension in metres (Eg. 50/50)</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="text" id="qbaseversion">
+                <label class="unselectable">Q.Base Version Used</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="text" id="trinityversion">
+                <label class="unselectable">Trinity F90+ Version Used</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="text" id="pmbversion">
+                <label class="unselectable">Trinity PMB Version Used</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="text" id="escversion">
+                <label class="unselectable">ESC Version Used</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="missionplanner">
+                    <option disabled selected>Select Mission Planner</option>
+                </select>
+                <label class="unselectable">Flight Mission Planning Done By</label>
+            </div>
+
+            <div class="input-field col s5">
+                <select id="missionchecker">
+                    <option disabled selected>Select Mission Checker</option>
+                </select>
+                <label class="unselectable">Flight Mission Planning Checked By</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="number" id="images" step="1">
+                <label class="unselectable">Number of Images Captured</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="geotagged" step="1">
+                <label class="unselectable">Number of Geo-tagged Images</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="text" id="referencegcp">
+                <label class="unselectable">Point Code (GCP Number) of Reference Station (I-Base)</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="text" id="checkpoint">
+                <label class="unselectable">Check Point Present inside the flying Region, If any</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="whetherinitialprocessed">
+                    <option disabled selected>Select Yes / No</option>
+                    <option>Yes</option>
+                    <option>No</option>
+                </select>
+                <label class="unselectable">Initial Processing Done</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="number" id="initialerror" step="0.01">
+                <label class="unselectable">Total Error (m) Before Optimization</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="finalerror" step="0.01">
+                <label class="unselectable">Total Error (m) After Optimization</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="number" id="initialpoints" step="1">
+                <label class="unselectable">Number of Initial Points</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="finalpoints" step="1">
+                <label class="unselectable">Number of Final Points</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="whethersending">
+                    <option disabled selected>Select An Option</option>
+                    <option>Sending To Office</option>
+                    <option>Reflying the Flight</option>
+                </select>
+                <label class="unselectable">Whether Sending To Office</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="text" id="foldername">
+                <label class="unselectable">Folder Name For Sending To Office</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="number" id="filescount" step="1">
+                <label class="unselectable">Number of Files</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="number" id="foldersize" step="0.01">
+                <label class="unselectable">Folder Size in GB</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <small>Right Click The Folder and Choose Properties... Enter Number of Files and File Size From Here... Enter Correct Number of Files For Checking in Office (While Onward Transmission through FTP)</small>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="sendingmode">
+                    <option disabled selected>Select Mode</option>
+                    <option>FTP</option>
+                    <option>Harddisk</option>
+                </select>
+                <label class="unselectable">Mode of Sending of Data</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <input type="text" id="handedoverto">
+                <label class="unselectable">Handed Over To</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="date" id="handedoveron">
+                <label class="unselectable">Handed Over On</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <textarea id="remarks" class="materialize-textarea" data-length="300"></textarea>
+                <label class="unselectable">Remarks, If Any</label>
+            </div>
+        </div>
+
+        <div class="chip" id="data_submit_hint">Select Submit Data From Bottom Right Icon</div>
+
+        <div class="fixed-action-btn">
+            <a class="btn-floating btn-large blue">
+              <i class="large material-icons">cloud_queue</i>
+            </a>
+            <ul>
+                <li><a class="btn-floating orange" onclick="exportToCSVThisForm()" title="Export Flight"><i class="material-icons">cloud_download</i></a></li>
+                <li><a class="btn-floating red" onclick="printPDF()" title="Print Page"><i class="material-icons">print</i></a></li>
+                <li><a class="btn-floating green" id="saveAnchor" title="Save Data" onclick="submitFlightData();"><i class="material-icons">save</i></a></li>
+            </ul>
+        </div>
+
+        <div id="editFlightIDRowIndex" style="display:none"></div>
+    </form>
+</div>

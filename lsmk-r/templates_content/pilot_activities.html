@@ -1,0 +1,108 @@
+<div class="progress" id="progress-bar">
+    <div class="indeterminate"></div>
+</div>
+
+<div id="doc-content" style="display:none">
+    <ul class="collection">
+        <li class="collection-item"><b>Activities Register</b>&emsp;-&emsp;<span>Register Activities Like Marching To Camp, GPS Work Done, Reporting Back to HQ, Bad Weather Scenario, Technical Problems in Drone, Other Activities, etc...</span></li>
+    </ul>
+    <form class="col s12" id="activity-form">
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="dronenumber">
+                    <option disabled selected>Select Your Drone Number</option>
+                </select>
+                <label class="unselectable">Select Your Drone Number *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <input type="date" id="registerdate">
+                <label class="unselectable">Date of Register *</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s12">
+                <input type="time" id="registertime">
+                <label class="unselectable">Time of Register *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="pilot">
+                    <option disabled selected>Select Pilot</option>
+                </select>
+                <label class="unselectable">Select Pilot *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="copilot">
+                    <option disabled selected>Select Co-Pilot</option>
+                </select>
+                <label class="unselectable">Select Co-Pilot *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="district">
+                    <option disabled selected>Select District</option>
+                </select>
+                <label class="unselectable">Select District *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="taluk">
+                    <option disabled selected>Select Taluk</option>
+                </select>
+                <label class="unselectable">Select Taluk *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <textarea id="detailinfo" class="materialize-textarea" data-length="300"></textarea>
+                <label class="unselectable">Detailed Information *</label>
+            </div>
+        </div>
+
+        <ul class="collection">
+            <li class="collection-item" id="activity_hint">Give Detailed Information about the Activity Selected. Eg:- Wind Speed (QBase): 9 m/s, Wind Speed (Anemometer): 8.5 m/s</li>
+        </ul>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="activityremarks">
+                    <option disabled selected>Select Activity</option>
+                    <option>Marching to Camping Area</option>
+                    <option>Wind Speed Not Permissible</option>
+                    <option>Raining Or About to Rain</option>
+                    <option>Reccee Work Carried Out</option>
+                    <option>GPS Observation Carried Out</option>
+                    <option>Technical Problem in Drone</option>
+                    <option>Reporting Back To HQ</option>
+                    <option>Others</option>
+                </select>
+                <label class="unselectable">Select Activity Remarks *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <input id="campingarea" type="text" class="validate">
+                <label class="unselectable">Camping Area</label>
+              </div>
+        </div>
+
+        <div class="row">
+            <button type="button" class="waves-effect waves-light btn" onclick="printPDF()"><i class="material-icons left">print</i>Print PDF</button>
+            <button id="submit" type="button" class="waves-effect waves-light btn" onclick="submitActivityData(); this.disabled = true;"><i class="material-icons left">cloud_upload</i>Submit Data</button>
+        </div>
+    </form>
+</div>

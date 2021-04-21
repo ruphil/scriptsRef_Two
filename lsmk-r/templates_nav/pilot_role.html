@@ -1,0 +1,39 @@
+<div id="pilot-role">
+    <nav>
+        <div class="nav-wrapper">
+            <a class="brand-logo right">Pilot Register</a>
+            <ul id="nav-mobile" class="left">
+                <li><a class="waves-effect waves-light" onclick="loadUserDetails();"><i class="large material-icons">account_circle</i></a></li>
+                <li><a class="dropdown-trigger" data-target='pilot-dropdown'>Menu</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dropdown Structure -->
+    <ul id='pilot-dropdown' class='dropdown-content'>
+        <li><a onclick="loadContent('pilot_activities')">Activities / Weather Register</a></li>
+        <li><a onclick="loadContent('pilot_flights')">Flights Register</a></li>
+        <li><a class="waves-effect waves-light modal-trigger" href="#reports">Reports Generator</a></li>
+        
+        <!-- <li><a href=""></a></li> -->
+    </ul>
+
+    <div id="userDetailsModal" class="modal" style="width: 40%">
+        <ul class="collection">
+            <li class="collection-item"><span id="detailMail">J</span><i class="material-icons right">mail</i></li>
+            <li class="collection-item"><span id="detailName">H</span><i class="material-icons right">person_pin</i></li>
+            <li class="collection-item"><span id="detailMobile">D</span><i class="material-icons right">phone</i></li>
+            <li class="collection-item"><span id="detailRole">D</span><i class="material-icons right">business_center</i></li>
+            <li class="collection-item"><a class="waves-effect waves-light btn-floating red right" onclick="logout();" title="Logout"><i class="material-icons right">power_settings_new</i></a></button></li>
+        </ul>
+    </div>
+
+    <div id="reports" class="modal" style="width: 90% !important ; height: 90% !important;">
+        
+        <div class="modal-content" style="position:absolute; left: 0; right: 0; bottom: 0; top: 0px;">
+            <a class="btn grey right modal-close" title="close"><i class="large material-icons">close</i></a>
+            <!-- <iframe width="100%" height="100%" src="http://localhost:8080/reports" frameborder="0"></iframe> -->
+            <iframe width="100%" height="100%" src="https://lsmk-r.appspot.com/reports" frameborder="0"></iframe>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collector GIS</title>
+    <link href="app.css" rel="stylesheet"/>
+</head>
+<body>
+    <br/>
+    <table width="100%">
+        <tr><td class="noselect">
+            <h2>Collector GIS</h2>
+
+            <button id="btnsourcefolder">Select Source Folder</button><br/><br/>
+            <div id="divsourcefolder"></div><br/>
+
+            <button id="btnxlfile">Select XL File</button><br/><br/>
+            <div id="divxlfile"></div><br/>
+
+            <button id="btntargetfolder">Select Target Folder</button><br/><br/>
+            <div id="divtargetfolder"></div><br/>
+            
+            <button id="btnstartsearching">Start Searching</button><br/><br/>
+            <div id="currentFlightID"></div><br/>
+            <div id="divstatus"></div><br/>
+
+            <button id="btnexit">Exit</button>
+        </td></tr>
+    </table>
+    
+    <script>
+        // Globals
+        let sourcefolderPath = '';
+        let xlFilePath = '';
+        let targetfolderPath = '';
+        let allFolderNamesList = [];
+        let missingFlightIDsXlData = [];
+    </script>
+
+    <script src="btnhandles.js"></script>
+    <script src="functions.js"></script>
+</body>
+</html>

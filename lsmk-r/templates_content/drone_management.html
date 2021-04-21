@@ -1,0 +1,57 @@
+<div class="progress" id="progress-bar">
+    <div class="indeterminate"></div>
+</div>
+
+<div id="doc-content" style="display:none">      
+    <form class="col s12" id="drone-form">
+        <div class="row">
+            <div class="input-field col s9">
+                <select id="dronenumber">
+                    <option disabled selected>Select Your Drone Number</option>
+                </select>
+                <label class="unselectable">Select Your Drone Number *</label>
+            </div>
+
+            <div class="input-field col s2">
+                <button type="button" class="waves-effect waves-light btn orange" onclick="addAllDronesToChips();"><i class="material-icons">add_circle</i></button>
+                <button type="button" class="waves-effect waves-light btn orange" onclick="removeAllDronesFromChips();"><i class="material-icons">remove_circle</i></button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="chips" id="drones"></div>
+        </div>
+
+        <div class="row">
+            <div class="input-field col s5">
+                <select id="drone_event">
+                    <option disabled selected>Select Event</option>
+                    <option>Deployed to Field</option>
+                    <option>Faced Technical Issue</option>
+                    <option>Brough Back To GDC</option>
+                    <option>Sent for Repair to Vendor</option>
+                    <option>Item Received In GDC</option>
+                    <option>Test Flights Conducted</option>
+                    <option>Others</option>
+                </select>
+                <label class="unselectable">Select Drone Event *</label>
+            </div>
+
+            <div class="input-field col s5">
+                <input type="date" id="eventdate">
+                <label class="unselectable">Event Date *</label>
+            </div> 
+        </div>
+
+        <div class="row">
+            <div class="input-field col s12">
+                <textarea id="remarks" class="materialize-textarea" data-length="300"></textarea>
+                <label class="unselectable">Remarks *</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <button type="button" class="waves-effect waves-light btn" onclick="appendDroneMgmtData(); this.disabled = true;"><i class="material-icons left">cloud_upload</i>Append Drone Information</button>
+        </div>
+    </form>
+</div>

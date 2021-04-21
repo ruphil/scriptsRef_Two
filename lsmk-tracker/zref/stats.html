@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Statistics</title>
+
+    <link rel="stylesheet" href="css/materialize.min.css">
+    <link rel="stylesheet" href="css/leaflet.css">
+    <link rel="stylesheet" href="css/L.Control.ZoomBox.css">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png"/>
+
+    <style>
+      html, body {
+          margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <form class="col s12" id="stats-form" style="display: inline-block;text-align: center; min-width: 80vw;">
+      <div class="row">
+          <div class="input-field col s4">
+              <input type="date" id="fromdate">
+              <label class="unselectable">From Date</label>
+          </div>
+
+          <div class="input-field col s4">
+              <input type="date" id="todate">
+              <label class="unselectable">To Date</label>
+          </div>
+
+          <div class="input-field col s3">
+              <button class="btn orange" type="button" onclick="generateOutturnReport()">Get Outturn Report</button>
+          </div>
+      </div>
+
+      <div class="row">
+        <div class="input-field col s4">
+            <input type="date" id="fromdateflights">
+            <label class="unselectable">From Date</label>
+        </div>
+
+        <div class="input-field col s4">
+            <input type="date" id="todateflights">
+            <label class="unselectable">To Date</label>
+        </div>
+
+        <div class="input-field col s3">
+            <button class="btn orange" type="button" onclick="weeklyFlightsStatus()">Weekly Flights Status</button>
+        </div>
+    </div>
+    </form>
+
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script src="js/materialize.min.js"></script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = io();
+        
+        function weeklyFlightsStatus(){
+          let fromdate = $('#fromdateflights').val();
+          let todate = $('#todateflights').val();
+
+          if(fromdate != '' && todate != ''){
+            socket.emit('getRowsSheetWeeklyFlightsStatus');
+          }
+
+          console.log(fromdate, todate);
+        }
+
+        socket.on('handleRowsSheetWeeklyFlightsStatus', function(data){
+          console.log(data);
+
+          let xl2Ddata = data[0].values;
+
+          let startDate = makeDate($('#fromdateflights').val());
+          let endDate = makeDate($('#todateflights').val());
+          
+          let firstDate = getMonday(startDate);
+          let lastDate = getSunday(endDate);
+          console.log(firstDate, lastDate);
+
+          let currentDate = new Date(firstDate.getTime());
+          let weekData = [];
+          let weeklyFlightCount = 0;
+          let weeklyVillagesCount = 0;
+          let weeklyUniqueDatesArray = [];
+          while(currentDate.getTime() <= lastDate.getTime()){
+            let firstDayCurrentWeek = getMonday(currentDate);
+            let lastDayCurrentWeek = getSunday(currentDate);
+
+            if(currentDate.getTime() >= lastDayCurrentWeek.getTime()){
+              let weeklyDatesArray = [];
+              for(let i = 1; i < xl2Ddata.length; i++){
+                let xlDate = makeDate(xl2Ddata[i][1]);
+                
+                if(firstDayCurrentWeek.getTime() <= xlDate.getTime() && xlDate.getTime() <= lastDayCurrentWeek.getTime()){
+                  // console.log(xlDate);
+
+                  weeklyDatesArray.push(xlDate);
+                  
+
+                  // weeklyVillagesCount += villagesCount;
+
+                  weeklyFlightCount++;
+                }
+              }
+
+              for (var i = 0; i < weeklyDatesArray.length; i++) {
+                if (!isDateInArray(weeklyDatesArray[i], weeklyUniqueDatesArray)) {
+                  weeklyUniqueDatesArray.push(weeklyDatesArray[i]);
+                }
+              }
+
+              // console.log(weeklyUniqueDatesArray);
+              for (var i = 0; i < weeklyUniqueDatesArray.length; i++) {
+                let villagesCount = getVillagesCountForDate(weeklyUniqueDatesArray[i], xl2Ddata);
+                console.log(weeklyUniqueDatesArray[i], villagesCount);
+                weeklyVillagesCount += villagesCount;
+              }
+
+              weekData.push([firstDayCurrentWeek.toLocaleDateString("en-IN"), lastDayCurrentWeek.toLocaleDateString("en-IN"), weeklyFlightCount, weeklyVillagesCount]);
+
+              weeklyFlightCount = 0;
+              weeklyVillagesCount = 0;
+              weeklyUniqueDatesArray = [];
+            }
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+
+          makeVillagesCSV(weekData);
+        });
+
+        let csvVillagesExportingHeaderRow = ['STARTDAYOFWEEK', 'ENDDAYOFWEEK', 'TOTAL_FLIGHTS', 'VILLAGES_COVERED'];
+
+        function makeVillagesCSV(weekData){
+          let csvRows = [];
+          csvRows.push(csvVillagesExportingHeaderRow);
+
+          csvRows = csvRows.concat(weekData);
+          //console.log(csvRows);
+          exportToCsv('VillagesFlights.csv', csvRows);
+        }
+
+        function isDateInArray(needle, haystack) {
+          for (var i = 0; i < haystack.length; i++) {
+            if (needle.getTime() === haystack[i].getTime()) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        function getMonday(d) {
+          d = new Date(d);
+          let day = d.getDay();
+          let diff = d.getDate() - day + (day == 0 ? -6 : 1); // Adjust when day is sunday
+          return new Date(d.setDate(diff));
+        }
+
+        function getSunday(d) {
+          d = new Date(d);
+          let day = d.getDay();
+          let diff = d.getDate() + (day == 0 ? 0 : 6 - day + 1); // Adjust when day is Sunday
+          return new Date(d.setDate(diff));
+        }
+
+        //  --------------------------------------------------------------------------------------
+
+        function generateOutturnReport(){
+          let fromdate = $('#fromdate').val();
+          let todate = $('#todate').val();
+
+          if(fromdate == '' || todate == ''){
+            let curr = new Date();
+            let first = curr.getDate() - curr.getDay() + 1;
+            let last = first + 6;
+
+            let firstday = new Date(curr.setDate(first));
+            let lastday = new Date(curr.setDate(last));
+            //console.log(firstday, lastday);
+
+            let currentDateFirst = firstday.toISOString().slice(0,10);
+            let currentDateLast = lastday.toISOString().slice(0,10);
+
+            $('#fromdate').val(currentDateFirst);
+            $('#todate').val(currentDateLast);
+          }
+          socket.emit('getRowsSheetDataForOutturnReport');
+        }
+
+        socket.on('handleRowsSheetDataForOutturnReport', function(data){
+          let days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+          let xl2Ddata = [];
+          let villagesOutturn = [];
+          xl2Ddata = data[0].values;
+          //console.log(xl2Ddata);
+          
+          let currentDate = makeDate($('#fromdate').val());
+          let endDate = makeDate($('#todate').val());
+
+          while (currentDate.getTime() <= endDate.getTime()){
+            let villagesCount = getVillagesCountForDate(currentDate, xl2Ddata);
+            let flightCount = getFlightsForDate(currentDate, xl2Ddata);
+            let dronesDeployed = getDronesDeployedForDate(currentDate, xl2Ddata);
+            
+            let dayName = days[currentDate.getDay()];
+            villagesOutturn.push([currentDate, dayName, villagesCount, flightCount, dronesDeployed]);
+
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+
+          //console.log(villagesOutturn);
+          makeCSV(villagesOutturn);
+        });
+
+        let csvExportingHeaderRow = ['DAY', 'DATE', 'TOTAL_DRONES', 'NUMBER_OF_FLIGHTS', 'NUMBER_OF_VILLAGES'];
+        function makeCSV(villagesOutturn){
+          let csvRows = [];
+          csvRows.push(csvExportingHeaderRow);
+
+          csvRows = csvRows.concat(villagesOutturn);
+          //console.log(csvRows);
+          exportToCsv('VillagesNDrones.csv', csvRows);
+        }
+
+        function makeDate(dateStr){
+          let dateStrParts = dateStr.split('-');
+          return new Date(dateStrParts[0], parseInt(dateStrParts[1]) - 1, dateStrParts[2], 12, 0, 0);
+        }
+
+        function pad(n, width, z) {
+          z = z || '0';
+          n = n + '';
+          return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+        }
+
+        function getVillagesCountForDate(date, xl2Ddata){
+          let dateStr = date.getFullYear() + "-" + pad((date.getMonth() + 1), 2) + "-" + pad(date.getDate(), 2);
+          //console.log(dateStr);
+
+          let villagesList = [];
+          for(let i = 1; i < xl2Ddata.length; i++){
+            if(xl2Ddata[i][1] == dateStr ){
+              let villagesData = xl2Ddata[i][15].split(",");
+
+              for(let j = 0; j < villagesData.length; j++){
+                let villagesStr = villagesData[j];
+                let villagesNumeric = villagesStr.replace(/\D+/g,"");
+                villagesList.push(villagesNumeric);
+              }
+            }
+          }
+
+          let villagesListUnique = villagesList.filter(onlyUnique);
+
+          let villagesUniqueFiltered = villagesListUnique.filter(function(value){
+            return value != "";
+          });
+
+          return villagesUniqueFiltered.length;
+        }
+
+        function getFlightsForDate(date, xl2Ddata){
+          let dateStr = date.getFullYear() + "-" + pad((date.getMonth() + 1), 2) + "-" + pad(date.getDate(), 2);
+
+          let totalFlights = 0;
+          for(let i = 1; i < xl2Ddata.length; i++){
+            if(xl2Ddata[i][1] == dateStr ){
+              totalFlights++;
+            }
+          }
+
+          return totalFlights;
+        }
+
+        function getDronesDeployedForDate(date, xl2Ddata){
+          let dateStr = date.getFullYear() + "-" + pad((date.getMonth() + 1), 2) + "-" + pad(date.getDate(), 2);
+
+          let droneNumbers = [];
+          for(let i = 1; i < xl2Ddata.length; i++){
+            if(xl2Ddata[i][1] == dateStr ){
+              let droneNumber = xl2Ddata[i][0];
+
+              droneNumbers.push(droneNumber);
+            }
+          }
+
+          let droneNumbersUnique = droneNumbers.filter(onlyUnique);
+          return droneNumbersUnique.length;
+        }
+
+        function onlyUnique(value, index, self) {
+          return self.indexOf(value) === index;
+        }
+
+        function exportToCsv(filename, rows) {
+          let processRow = function (row) {
+              let finalVal = '';
+              for (let j = 0; j < row.length; j++) {
+                  let innerValue = row[j] === null ? '' : row[j].toString();
+                  let result = innerValue.replace(/"/g, '""');
+                  if (result.search(/("|,|\n)/g) >= 0)
+                      result = '"' + result + '"';
+                  if (j > 0)
+                      finalVal += ',';
+                  finalVal += result;
+              }
+              return finalVal + '\n';
+          };
+
+          let csvFile = '';
+          for (let i = 0; i < rows.length; i++) {
+              csvFile += processRow(rows[i]);
+          }
+
+          let blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+          if (navigator.msSaveBlob) { // IE 10+
+              navigator.msSaveBlob(blob, filename);
+          } else {
+              let link = document.createElement("a");
+              if (link.download !== undefined) { // feature detection
+                  // Browsers that support HTML5 download attribute
+                  let url = URL.createObjectURL(blob);
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", filename);
+                  link.style.visibility = 'hidden';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+              }
+          }
+        }
+    </script>
+
+  </body>
+</html>

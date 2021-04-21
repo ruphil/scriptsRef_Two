@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KML & Shapefile Collector</title>
+    <link href="app.css" rel="stylesheet"/>
+</head>
+<body>
+    <br/>
+    <table width="100%">
+        <tr><td class="noselect">
+            <h3>KML & Shapefile GIS Tool</h3>
+
+            <label for="flightno">Enter Your Drone Model</label><br/><br/>
+            <input type="text" id="inputfligntno" name="flightno" value="TrinityF90+00000"/><br/><br/>
+
+            <label for="flightdate">Flights Date</label><br/><br/>
+            <input type="date" id="flightdate" name="flightdate"/><br/><br/>
+
+            <button id="rawdataFoldersbtn">Select Raw Data Folders</button><br/><br/>
+            <div id='outrawDataStatus'>You have selected 0 flights today</div><br/>
+
+            <button id="zipfolderbtn">Select Target Folder for Zip</button><br/><br/>
+            <div id='outzipfoldername'>D:/</div><br/>
+            
+            <button id="makeZipbtn">Make Flight ID GIS Zip</button><br/><br/>
+            <div id="statusout"></div><br/>
+
+            <button id="exitbtn">Exit</button>
+        </td></tr>
+    </table>
+    
+    <script src="app.js"></script>
+</body>
+</html>

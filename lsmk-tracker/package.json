@@ -1,0 +1,27 @@
+{
+  "name": "lsmk-r-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruphil/lsmk-r-node.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ruphil/lsmk-r-node/issues"
+  },
+  "homepage": "https://github.com/ruphil/lsmk-r-node#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "googleapis": "^59.0.0",
+    "pug": "^3.0.0",
+    "socket.io": "^2.3.0"
+  }
+}

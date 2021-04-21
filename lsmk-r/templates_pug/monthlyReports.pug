@@ -1,0 +1,98 @@
+doctype html
+html(lang="en")
+  head
+    title KGDC Drone Flying Consolidated Report
+    style.
+      table {
+        font-size: 8px;
+        border-collapse: collapse;
+      }
+
+      th {
+        font-size: 10px;
+        text-align: center;
+
+        background: purple;
+        color: white;
+      }
+      
+      td {
+        text-align: center;
+      }
+
+      div {
+        text-align: center;
+      }
+
+      thead th { position: sticky; top: 0; }
+      thead th.secondHead { position: sticky; top: 12; }
+  body
+    div
+      h1 Drone Flying Consolidated Report of KGDC
+      h2=reportPeriod
+    table(style='width:100%' border='1' id="main-table")
+      thead
+        tr
+          - var pilotHeading = "";
+          each columnName,index in prefixHeadings
+            if index == 1
+              th(rowspan='2') REGISTER / ACTIVITY TIME
+            else if index == 4
+              - pilotHeading = columnName;
+            else if index == 5
+              th(rowspan='2')=pilotHeading + " / " + columnName
+            else
+              th(rowspan='2')=columnName
+          th(colspan=flightHeadings.length) ACTIVITIES / FLIGHT DETAILS
+          each columnName in suffixHeadings
+            th(rowspan='2')=columnName
+        tr
+          each columnName,index in flightHeadings
+            if index == 2
+              th(class='secondHead')='FLIGHT DURATION'
+            else
+              th(class='secondHead')=columnName
+      tbody
+        each row in rowsValues
+          if row.length > 12
+            tr
+              - var pilotVal = "";
+              - var takeofftime = "";
+              - var landingtime = "";
+              - var hours = 0;
+              - var minutes = 0;
+              each fieldValue,index in row
+                if index == 1
+                  - takeofftime = fieldValue
+                  td=fieldValue
+                else if index == 4
+                  - pilotVal = fieldValue;
+                else if index == 5
+                  td=pilotVal + " / " + fieldValue
+                else if index == 10
+                  - landingtime = fieldValue;
+                  - hours = landingtime.split(':')[0] - takeofftime.split(':')[0];
+                  - minutes = landingtime.split(':')[1] - takeofftime.split(':')[1];
+
+                  - if(minutes < 0) { hours--; minutes = 60 + minutes; }
+                  - hours = hours.toString().length < 2 ? '0' + hours : hours;
+                  td=hours + ' Hr ' + minutes + ' Mins'
+                else
+                  td=fieldValue
+          else
+            tr
+              - var pilotVal = "";
+              - var colorStr = "red";
+              each fieldValue, index in row
+                if index == 9
+                  if fieldValue == 'GPS Observation Carried Out'
+                    - colorStr = "blue";
+              each fieldValue, index in row
+                if index == 4
+                  - pilotVal = fieldValue;
+                else if index == 5
+                  td=pilotVal + " / " + fieldValue
+                else if index == 8
+                  td(style={color: colorStr} colspan=flightHeadings.length)=fieldValue
+                else
+                  td=fieldValue

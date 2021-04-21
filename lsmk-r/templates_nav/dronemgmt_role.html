@@ -1,0 +1,27 @@
+<div id="dronemgmt-role">
+    <nav>
+        <div class="nav-wrapper">
+            <a class="brand-logo right">Drone Management</a>
+            <ul id="nav-mobile" class="left">
+                <li><a class="waves-effect waves-light" onclick="loadUserDetails();"><i class="large material-icons">account_circle</i></a></li>
+                <li><a class="dropdown-trigger" data-target='pilot-dropdown'>Menu</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dropdown Structure -->
+    <ul id='pilot-dropdown' class='dropdown-content'>
+        <li><a onclick="loadContent('drone_management')">Drone Management</a></li>
+        <li><a href="http://localhost:8080/stats">Reports Generator</a></li>
+    </ul>
+
+    <div id="userDetailsModal" class="modal" style="width: 40%">
+        <ul class="collection">
+            <li class="collection-item"><span id="detailMail">J</span><i class="material-icons right">mail</i></li>
+            <li class="collection-item"><span id="detailName">H</span><i class="material-icons right">person_pin</i></li>
+            <li class="collection-item"><span id="detailMobile">D</span><i class="material-icons right">phone</i></li>
+            <li class="collection-item"><span id="detailRole">D</span><i class="material-icons right">business_center</i></li>
+            <li class="collection-item"><a class="waves-effect waves-light btn-floating red right" onclick="logout();" title="Logout"><i class="material-icons right">power_settings_new</i></a></button></li>
+        </ul>
+    </div>
+</div>
